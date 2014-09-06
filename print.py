@@ -1,11 +1,13 @@
 __author__ = 'gan'
-#coding=UTF-8
+#coding=gb2312
 
 import tempfile
 import win32api
 import win32print
+import win32ui
 import mysqlutil
 import sched,time
+import MSWinPrint
 import ConfigParser
 
 config=ConfigParser.ConfigParser()
@@ -20,12 +22,27 @@ dbPool = mysqlutil.initDBPool(
     config.get('db','db_name')
 );
 
-#ÊâìÂç∞Ê†ºÂºèÁõ∏ÂÖ≥Â∏∏Èáè
+#¥Ú”°∏Ò Ωœ‡πÿ≥£¡ø
 FD_NAME = config.get('info','fd_name')
+FD_NAME = " Ø…Ω»È—Úµ⁄“ªº“"
 TOTAL_WIDTH = config.getint('info','total_width')
 TMP_FOLDER = config.get('info','tmp_folder')
+scale_factor = config.getfloat('info','scale_factor')
+line_interval_height = config.getint('info','line_interval_height')
 
 DISH_TPL = open("dish.tpl","r").read()
+
+X=0; Y=50
+hDC = win32ui.CreateDC ()
+hDC.CreatePrinterDC (win32print.GetDefaultPrinter())
+#…Ë÷√◊÷ÃÂµƒ—˘ Ωº∞¥Û–°
+font = win32ui.CreateFont({
+    "name": "ÀŒÃÂ",
+    "height": int(10 * scale_factor),
+    "weight": 400
+})
+hDC.SelectObject(font)
+hDC.StartDoc("fd receipe")
 
 def genblank(blankNum):
     _nblank = ""
@@ -46,8 +63,6 @@ def printfile(filename):
         0
     )
 
-    win32print.
-
 if __name__=="__main__":
     while True:
         bills = mysqlutil.query(dbPool,"select * from bill where status = 0")
@@ -56,34 +71,36 @@ if __name__=="__main__":
             print("There are no available bills.")
 
         for bill in bills:
+            hDC.StartPage()
+
             filename = tempfile.mktemp (".txt","print_%d_%d_%s_" % (bill[0],bill[2],time.strftime('%Y%m%d%H%M%S',time.localtime(time.time()))),TMP_FOLDER)
             billDetails = mysqlutil.query(dbPool,"select * from bill_detail where bill_id  = %d " % bill[0])
 
-            billOperator = bill[16].encode("utf-8","ignore")
+            billOperator = bill[16].encode("gb2312","ignore")
             billPrintContent = []
 
-            billPrintContent.append(FD_NAME.center(42,' ') + "\n")
+            billPrintContent.append(FD_NAME.center(28,' ') + "\n")
 
-            billPrintContent.append("%s%s\n" % ("(Ê†∏ÂØπÂçï)",time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())).rjust(26)))
-            billPrintContent.append("Âè∞Âè∑:%d" % bill[2] + "\n");
+            billPrintContent.append("%s%s\n" % ("(∫À∂‘µ•)",time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())).rjust(18)))
+            billPrintContent.append("Ã®∫≈:%d" % bill[2] + "\n");
             billPrintContent.append("_".center(TOTAL_WIDTH,"_") + "\n")
-            billPrintContent.append("\n")
+            #billPrintContent.append("\n")
 
             for billDetail in billDetails:
 
                 dishfilename =  tempfile.mktemp (".html","dish_%d_" % (billDetail[0]),TMP_FOLDER)
 
 
-                dishName = billDetail[3].encode("utf-8","ignore")
+                dishName = billDetail[3].encode("gb2312","ignore")
                 dishAmount = billDetail[4]
                 dishPrice = billDetail[5]
 
-                part1BlankLen = 12 - len(dishName) / 3 - len(("%d" % dishAmount)) / 2;
+                part1BlankLen = 10 - len(dishName) / 2 - len(("%d" % dishAmount)) / 2;
                 part1Blank = ""
                 for i in range(1,part1BlankLen):
                     part1Blank += "  ";
 
-                part2BlankLen = 12 - len(('%.2f' % dishPrice))
+                part2BlankLen = 9 - len(('%.2f' % dishPrice))
                 part2Blank = ""
                 for i in range(1,part2BlankLen):
                     part2Blank += " ";
@@ -92,26 +109,31 @@ if __name__=="__main__":
 
                 dishPrintContent = DISH_TPL % (bill[2],0,billOperator,time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())),dishAmount,dishName,dishPrice,bill[2],bill[2])
 
-                open(dishfilename,'w').write(dishPrintContent)
+                #open(dishfilename,'w').write(dishPrintContent)
                 #printfile(dishfilename)
 
             billPrintContent.append("_".center(TOTAL_WIDTH,"_") + "\n")
-            billPrintContent.append("\n")
+            #billPrintContent.append("\n")
 
-            billPrintContent.append("%sÈ£üÂìÅ‰ª∑" % genblank(16) + ("%.2f" % bill[4]).rjust(13) + "\n")
-            billPrintContent.append("%sÊÄª‰ª∑" % genblank(18) + ("%.2f" % bill[4]).rjust(13) + "\n")
+            billPrintContent.append("%s ≥∆∑º€" % genblank(11) + ("%.2f" % bill[4]).rjust(11) + "\n")
+            billPrintContent.append("%s◊‹º€" % genblank(13) + ("%.2f" % bill[4]).rjust(11) + "\n")
             billPrintContent.append("_".center(TOTAL_WIDTH,"_") + "\n")
 
-            billPrintContent.append("Ê¨¢  Ëøé  ÊÉ†  È°æ  ".center(TOTAL_WIDTH) + "\n")
-            billPrintContent.append("ÁîµËØù:0898-66989888".center(TOTAL_WIDTH))
+            billPrintContent.append("ª∂  ”≠  ª›  πÀ  ".center(TOTAL_WIDTH) + "\n")
+            billPrintContent.append("µÁª∞:0898-66989888".center(TOTAL_WIDTH))
 
-            open(filename,'w').writelines(billPrintContent)
+            #open(filename,'w').writelines(billPrintContent)
+            for line in billPrintContent:
+                hDC.TextOut(X,Y,line)
+                Y += line_interval_height
 
-            #Êõ¥Êñ∞billÁöÑÁä∂ÊÄÅ‰∏∫Â∑≤ÊâìÂç∞
+            hDC.EndPage ()
+
+            #∏¸–¬billµƒ◊¥Ã¨Œ™“—¥Ú”°
             mysqlutil.saveOrUpdate(dbPool,"update bill set status = 3 where id = %d " % bill[0])
             #printfile(filename)
 
-
+        hDC.EndDoc ()
         time.sleep(1)
 
 
