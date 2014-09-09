@@ -41,8 +41,7 @@ font = win32ui.CreateFont({
     "height": int(10 * scale_factor),
     "weight": 400
 })
-hDC.SelectObject(font)
-hDC.StartDoc("fd receipe")
+
 
 def genblank(blankNum):
     _nblank = ""
@@ -77,6 +76,7 @@ if __name__=="__main__":
             billDetails = mysqlutil.query(dbPool,"select * from bill_detail where bill_id  = %d " % bill[0])
 
             billOperator = bill[16].encode("gb2312","ignore")
+            billTableNo = bill[2]
             billPrintContent = []
 
             billPrintContent.append(FD_NAME.center(28,' ') + "\n")
@@ -90,10 +90,17 @@ if __name__=="__main__":
 
                 dishfilename =  tempfile.mktemp (".html","dish_%d_" % (billDetail[0]),TMP_FOLDER)
 
-
                 dishName = billDetail[3].encode("gb2312","ignore")
                 dishAmount = billDetail[4]
                 dishPrice = billDetail[5]
+
+                billDetailPrintContent = []
+                billDetailPrintContent.append("С??" + "???:%d" % billTableNo .rjust(21) + "\n")
+                billDetailPrintContent.append("?????".center(28,' ') + "\n")
+                billDetailPrintContent.append(time.strftime('%H:%M:%S',time.localtime(time.time())).rjust(18) + "\n");
+                billDetailPrintContent.append("_".center(TOTAL_WIDTH,"_") + "\n")
+                billDetailPrintContent.append("%d  %s%s%.2f" % (dishAmount,dishName,6,dishPrice))
+                billDetailPrintContent.append("_".center(TOTAL_WIDTH,"_") + "\n")
 
                 part1BlankLen = 10 - len(dishName) / 2 - len(("%d" % dishAmount)) / 2;
                 part1Blank = ""
@@ -122,18 +129,20 @@ if __name__=="__main__":
             billPrintContent.append("欢  迎  惠  顾  ".center(TOTAL_WIDTH) + "\n")
             billPrintContent.append("电话:0898-66989888".center(TOTAL_WIDTH))
 
+            hDC.SelectObject(font)
+            hDC.StartDoc("fd receipe")
             #open(filename,'w').writelines(billPrintContent)
             for line in billPrintContent:
                 hDC.TextOut(X,Y,line)
                 Y += line_interval_height
 
             hDC.EndPage ()
+            hDC.EndDoc ()
 
             #更新bill的状态为已打印
             mysqlutil.saveOrUpdate(dbPool,"update bill set status = 3 where id = %d " % bill[0])
             #printfile(filename)
 
-        hDC.EndDoc ()
         time.sleep(1)
 
 
