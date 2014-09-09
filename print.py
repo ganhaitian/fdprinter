@@ -93,7 +93,7 @@ if __name__=="__main__":
 
                 dishName = billDetail[3].encode("gb2312","ignore")
                 dishAmount = billDetail[4]
-                dishPrice = billDetail[5]
+                dishPrice = billDetail[6]
 
                 part1BlankLen = 10 - len(dishName) / 2 - len(("%d" % dishAmount)) / 2;
                 part1Blank = ""
