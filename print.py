@@ -7,6 +7,7 @@ import win32print
 import win32ui
 import mysqlutil
 import sched,time
+import MSWinPrint
 import ConfigParser
 
 config=ConfigParser.ConfigParser()
@@ -75,11 +76,7 @@ if __name__=="__main__":
             filename = tempfile.mktemp (".txt","print_%d_%d_%s_" % (bill[0],bill[2],time.strftime('%Y%m%d%H%M%S',time.localtime(time.time()))),TMP_FOLDER)
             billDetails = mysqlutil.query(dbPool,"select * from bill_detail where bill_id  = %d " % bill[0])
 
-            if bill[16] is None:
-                billOperator = "Œ¢–≈”√ªß"
-            else:
-                billOperator = bill[16].encode("gb2312","ignore")
-            
+            billOperator = bill[16].encode("gb2312","ignore")
             billPrintContent = []
 
             billPrintContent.append(FD_NAME.center(28,' ') + "\n")
