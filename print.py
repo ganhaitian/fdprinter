@@ -32,17 +32,26 @@ line_interval_height = config.getint('info','line_interval_height')
 
 DISH_TPL = open("dish.tpl","r").read()
 
-X=0; Y=50
-hDC = win32ui.CreateDC ()
-hDC.CreatePrinterDC (win32print.GetDefaultPrinter())
 #设置字体的样式及大小
-font = win32ui.CreateFont({
+normal_font = win32ui.CreateFont({
     "name": "宋体",
     "height": int(10 * scale_factor),
     "weight": 400
 })
-hDC.SelectObject(font)
-hDC.StartDoc("fd receipe")
+
+big_font = win32ui.CreateFont({
+    "name": "宋体",
+    "height": int(13 * scale_factor),
+    "weight": 400
+})
+
+#打印机
+hDC = win32ui.CreateDC ()
+hDC.CreatePrinterDC (win32print.GetDefaultPrinter())
+
+
+X=0; Y=50
+
 
 def genblank(blankNum):
     _nblank = ""
@@ -71,24 +80,33 @@ if __name__=="__main__":
             print("There are no available bills.")
 
         for bill in bills:
-            hDC.StartPage()
+
 
             filename = tempfile.mktemp (".txt","print_%d_%d_%s_" % (bill[0],bill[2],time.strftime('%Y%m%d%H%M%S',time.localtime(time.time()))),TMP_FOLDER)
             billDetails = mysqlutil.query(dbPool,"select * from bill_detail where bill_id  = %d " % bill[0])
 
             billOperator = bill[16].encode("gb2312","ignore")
+            billTableNo = bill[2]
             billPrintContent = []
 
             billPrintContent.append(FD_NAME.center(28,' ') + "\n")
 
             billPrintContent.append("%s%s\n" % ("(核对单)",time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())).rjust(18)))
-            billPrintContent.append("台号:%d" % bill[2] + "\n");
+            billPrintContent.append("台号:%d" % billTableNo + "\n");
             billPrintContent.append("_".center(TOTAL_WIDTH,"_") + "\n")
             #billPrintContent.append("\n")
 
             for billDetail in billDetails:
 
-                dishfilename =  tempfile.mktemp (".html","dish_%d_" % (billDetail[0]),TMP_FOLDER)
+                #dishfilename =  tempfile.mktemp (".html","dish_%d_" % (billDetail[0]),TMP_FOLDER)
+                #出菜单的明细
+                billDetailPrintContent = []
+                billDetailPrintContent.append("小炒" + "台号:%d" % billTableNo .rjust(21) + "\n")
+                billDetailPrintContent.append("出品单".center(28,' ') + "\n")
+                billDetailPrintContent.append(time.strftime('%H:%M:%S',time.localtime(time.time())).rjust(18) + "\n");
+                billDetailPrintContent.append("_".center(TOTAL_WIDTH,"_") + "\n")
+                billDetailPrintContent.append("%d  %s%s%.2f" % (dishAmount,dishName,6,dishPrice))
+                billDetailPrintContent.append("_".center(TOTAL_WIDTH,"_") + "\n")
 
 
                 dishName = billDetail[3].encode("gb2312","ignore")
@@ -107,8 +125,8 @@ if __name__=="__main__":
 
                 billPrintContent.append("%s%s%d%s%.2f \n" % (dishName,part1Blank,dishAmount,part2Blank,dishPrice))
 
-                dishPrintContent = DISH_TPL % (bill[2],0,billOperator,time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())),dishAmount,dishName,dishPrice,bill[2],bill[2])
-
+                #最初方案是生成html，在小打印机完全行不通,pass
+                #dishPrintContent = DISH_TPL % (bill[2],0,billOperator,time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())),dishAmount,dishName,dishPrice,bill[2],bill[2])
                 #open(dishfilename,'w').write(dishPrintContent)
                 #printfile(dishfilename)
 
@@ -122,6 +140,10 @@ if __name__=="__main__":
             billPrintContent.append("欢  迎  惠  顾  ".center(TOTAL_WIDTH) + "\n")
             billPrintContent.append("电话:0898-66989888".center(TOTAL_WIDTH))
 
+            hDC.SelectObject(normal_font)
+            hDC.StartDoc("fd receipe")
+            hDC.StartPage()
+
             #open(filename,'w').writelines(billPrintContent)
             for line in billPrintContent:
                 hDC.TextOut(X,Y,line)
@@ -132,8 +154,10 @@ if __name__=="__main__":
             #更新bill的状态为已打印
             mysqlutil.saveOrUpdate(dbPool,"update bill set status = 3 where id = %d " % bill[0])
             #printfile(filename)
+            hDC.EndDoc ()
 
-        hDC.EndDoc ()
+
+
         time.sleep(1)
 
 
