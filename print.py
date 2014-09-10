@@ -7,7 +7,6 @@ import win32print
 import win32ui
 import mysqlutil
 import sched,time
-import MSWinPrint
 import ConfigParser
 
 config=ConfigParser.ConfigParser()
@@ -33,8 +32,9 @@ line_interval_height = config.getint('info','line_interval_height')
 DISH_TPL = open("dish.tpl","r").read()
 
 X=0; Y=50
+
 hDC = win32ui.CreateDC ()
-hDC.CreatePrinterDC (win32print.GetDefaultPrinter())
+
 #设置字体的样式及大小
 font = win32ui.CreateFont({
     "name": "宋体",
@@ -42,6 +42,12 @@ font = win32ui.CreateFont({
     "weight": 400
 })
 
+#大号字体
+big_font = win32ui.CreateFont({
+    "name": "宋体",
+    "height": int(13 * scale_factor),
+    "weight": 400
+})
 
 def genblank(blankNum):
     _nblank = ""
@@ -70,19 +76,22 @@ if __name__=="__main__":
             print("There are no available bills.")
 
         for bill in bills:
-            hDC.StartPage()
 
             filename = tempfile.mktemp (".txt","print_%d_%d_%s_" % (bill[0],bill[2],time.strftime('%Y%m%d%H%M%S',time.localtime(time.time()))),TMP_FOLDER)
             billDetails = mysqlutil.query(dbPool,"select * from bill_detail where bill_id  = %d " % bill[0])
 
-            billOperator = bill[16].encode("gb2312","ignore")
+            if bill[16] is None:
+                billOperator = "微信用户"
+            else:
+                 billOperator = bill[16].encode("gb2312","ignore")
+
             billTableNo = bill[2]
             billPrintContent = []
 
             billPrintContent.append(FD_NAME.center(28,' ') + "\n")
 
             billPrintContent.append("%s%s\n" % ("(核对单)",time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())).rjust(18)))
-            billPrintContent.append("台号:%d" % bill[2] + "\n");
+            billPrintContent.append("台号:%d%s%s" % (bill[2],genblank(13),billOperator) + "\n");
             billPrintContent.append("_".center(TOTAL_WIDTH,"_") + "\n")
             #billPrintContent.append("\n")
 
@@ -95,12 +104,24 @@ if __name__=="__main__":
                 dishPrice = billDetail[5]
 
                 billDetailPrintContent = []
-                billDetailPrintContent.append("С??" + "???:%d" % billTableNo .rjust(21) + "\n")
-                billDetailPrintContent.append("?????".center(28,' ') + "\n")
-                billDetailPrintContent.append(time.strftime('%H:%M:%S',time.localtime(time.time())).rjust(18) + "\n");
+                billDetailPrintContent.append("小炒" + ("台号:%d" % billTableNo).rjust(17) + "\n")
+                billDetailPrintContent.append("出品单".center(22,' ') + "\n")
+                billDetailPrintContent.append(time.strftime('%H:%M:%S',time.localtime(time.time())).rjust(21) + "\n");
                 billDetailPrintContent.append("_".center(TOTAL_WIDTH,"_") + "\n")
-                billDetailPrintContent.append("%d  %s%s%.2f" % (dishAmount,dishName,6,dishPrice))
+                billDetailPrintContent.append("%d  %s   %.2f" % (dishAmount,dishName,dishPrice))
                 billDetailPrintContent.append("_".center(TOTAL_WIDTH,"_") + "\n")
+
+                hDC.CreatePrinterDC (win32print.GetDefaultPrinter())
+                hDC.SelectObject(big_font)
+                hDC.StartDoc("fd_detail receipe")
+                hDC.StartPage()
+                #open(filename,'w').writelines(billPrintContent)
+                for line in billDetailPrintContent:
+                    hDC.TextOut(X,Y,line)
+                    Y += line_interval_height
+
+                hDC.EndPage ()
+                hDC.EndDoc ()
 
                 part1BlankLen = 10 - len(dishName) / 2 - len(("%d" % dishAmount)) / 2;
                 part1Blank = ""
@@ -129,8 +150,10 @@ if __name__=="__main__":
             billPrintContent.append("欢  迎  惠  顾  ".center(TOTAL_WIDTH) + "\n")
             billPrintContent.append("电话:0898-66989888".center(TOTAL_WIDTH))
 
+            hDC.CreatePrinterDC (win32print.GetDefaultPrinter())
             hDC.SelectObject(font)
             hDC.StartDoc("fd receipe")
+            hDC.StartPage()
             #open(filename,'w').writelines(billPrintContent)
             for line in billPrintContent:
                 hDC.TextOut(X,Y,line)
@@ -144,7 +167,6 @@ if __name__=="__main__":
             #printfile(filename)
 
         time.sleep(1)
-
 
 
 
