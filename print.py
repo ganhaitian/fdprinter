@@ -7,6 +7,7 @@ import win32print
 import win32ui
 import mysqlutil
 import sched,time
+
 import ConfigParser
 
 config=ConfigParser.ConfigParser()
@@ -69,7 +70,7 @@ def printfile(filename):
     )
 
 if __name__=="__main__":
-    while True:
+
         bills = mysqlutil.query(dbPool,"select * from bill where status = 0")
 
         if len(bills) == 0:
@@ -111,17 +112,17 @@ if __name__=="__main__":
                 billDetailPrintContent.append("%d  %s   %.2f" % (dishAmount,dishName,dishPrice))
                 billDetailPrintContent.append("_".center(TOTAL_WIDTH,"_") + "\n")
 
-                hDC.CreatePrinterDC (win32print.GetDefaultPrinter())
-                hDC.SelectObject(big_font)
-                hDC.StartDoc("fd_detail receipe")
-                hDC.StartPage()
-                #open(filename,'w').writelines(billPrintContent)
-                for line in billDetailPrintContent:
-                    hDC.TextOut(X,Y,line)
-                    Y += line_interval_height
-
-                hDC.EndPage ()
-                hDC.EndDoc ()
+                # hDC.CreatePrinterDC (win32print.GetDefaultPrinter())
+                # hDC.SelectObject(big_font)
+                # hDC.StartDoc("fd_detail receipe")
+                # hDC.StartPage()
+                # #open(filename,'w').writelines(billPrintContent)
+                # for line in billDetailPrintContent:
+                #     hDC.TextOut(X,Y,line)
+                #     Y += line_interval_height
+                #
+                # hDC.EndPage ()
+                # hDC.EndDoc ()
 
                 part1BlankLen = 10 - len(dishName) / 2 - len(("%d" % dishAmount)) / 2;
                 part1Blank = ""
@@ -150,23 +151,23 @@ if __name__=="__main__":
             billPrintContent.append("欢  迎  惠  顾  ".center(TOTAL_WIDTH) + "\n")
             billPrintContent.append("电话:0898-66989888".center(TOTAL_WIDTH))
 
-            hDC.CreatePrinterDC (win32print.GetDefaultPrinter())
-            hDC.SelectObject(font)
-            hDC.StartDoc("fd receipe")
-            hDC.StartPage()
-            #open(filename,'w').writelines(billPrintContent)
-            for line in billPrintContent:
-                hDC.TextOut(X,Y,line)
-                Y += line_interval_height
-
-            hDC.EndPage ()
-            hDC.EndDoc ()
+            # hDC.CreatePrinterDC (win32print.GetDefaultPrinter())
+            # hDC.SelectObject(font)
+            # hDC.StartDoc("fd receipe")
+            # hDC.StartPage()
+            # #open(filename,'w').writelines(billPrintContent)
+            # for line in billPrintContent:
+            #     hDC.TextOut(X,Y,line)
+            #     Y += line_interval_height
+            #
+            # hDC.EndPage ()
+            # hDC.EndDoc ()
 
             #更新bill的状态为已打印
             mysqlutil.saveOrUpdate(dbPool,"update bill set status = 3 where id = %d " % bill[0])
             #printfile(filename)
 
-        time.sleep(1)
+
 
 
 
