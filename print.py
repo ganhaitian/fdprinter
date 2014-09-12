@@ -107,17 +107,24 @@ if __name__=="__main__":
                 dishPrice = billDetail[5]
 
                 billDetailPrintContent = []
-                billDetailPrintContent.append("小炒" + ("台号:%d" % billTableNo).rjust(17) + "\n")
+
+                Y = 0
+                hDC.StartDoc("fd_detail receipe")
+                hDC.StartPage()
+                hDC.SelectObject(font)
+                hDC.TextOut(X,Y,"小炒" + ("台号:%d" % billTableNo).rjust(17) + "\n")
+                Y += line_interval_height
+
+                #billDetailPrintContent.append("小炒" + ("台号:%d" % billTableNo).rjust(17) + "\n")
                 billDetailPrintContent.append("出品单".center(22,' ') + "\n")
                 billDetailPrintContent.append(time.strftime('%H:%M:%S',time.localtime(time.time())).rjust(21) + "\n");
                 billDetailPrintContent.append("_".center(TOTAL_WIDTH,"_") + "\n")
                 billDetailPrintContent.append("%d  %s   %.2f" % (dishAmount,dishName,dishPrice))
                 billDetailPrintContent.append("_".center(TOTAL_WIDTH,"_") + "\n")
 
-                Y = 0
+
                 hDC.SelectObject(big_font)
-                hDC.StartDoc("fd_detail receipe")
-                hDC.StartPage()
+
                 # #open(filename,'w').writelines(billPrintContent)
                 for line in billDetailPrintContent:
                     hDC.TextOut(X,Y,line)
