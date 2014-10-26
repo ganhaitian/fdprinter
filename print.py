@@ -22,6 +22,25 @@ dbPool = mysqlutil.initDBPool(
     config.get('db','db_name')
 );
 
+#厨房出菜单打印数据对象
+class BillDetailPrint:
+
+    def __init__(self,printContent,font,spacing):
+        self.printContent = printContent
+        self.font = font
+        self.spacing = spacing
+
+    def getPrintContent(self):
+        return self.printContent
+
+    def getFont(self):
+        return self.font
+
+    def getSpacing(self):
+        return self.spacing
+
+
+
 #打印格式相关常量
 FD_NAME = config.get('info','fd_name')
 FD_NAME = "石山乳羊第一家"
@@ -80,7 +99,7 @@ if __name__=="__main__":
 
         for bill in bills:
 
-            filename = tempfile.mktemp (".txt","print_%d_%d_%s_" % (bill[0],bill[2],time.strftime('%Y%m%d%H%M%S',time.localtime(time.time()))),TMP_FOLDER)
+            #filename = tempfile.mktemp (".txt","print_%d_%d_%s_" % (bill[0],bill[2],time.strftime('%Y%m%d%H%M%S',time.localtime(time.time()))),TMP_FOLDER)
             billDetails = mysqlutil.query(dbPool,"select * from bill_detail where bill_id  = %d " % bill[0])
 
             if bill[16] is None:
@@ -88,13 +107,13 @@ if __name__=="__main__":
             else:
                  billOperator = bill[16].encode("gb2312","ignore")
 
-            billTableNo = bill[2]
+            billTableNo = bill[2].encode("gb2312","ignore")
             billPrintContent = []
 
             billPrintContent.append(FD_NAME.center(28,' ') + "\n")
 
             billPrintContent.append("%s%s\n" % ("(核对单)",time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())).rjust(18)))
-            billPrintContent.append("台号:%d%s%s" % (bill[2],genblank(13),billOperator) + "\n");
+            billPrintContent.append("台号:%s%s%s" % (billTableNo,genblank(13),billOperator) + "\n");
             billPrintContent.append("_".center(TOTAL_WIDTH,"_") + "\n")
             #billPrintContent.append("\n")
 
@@ -111,24 +130,33 @@ if __name__=="__main__":
                 Y = 0
                 hDC.StartDoc("fd_detail receipe")
                 hDC.StartPage()
-                hDC.SelectObject(font)
-                hDC.TextOut(X,Y,"小炒" + ("台号:%d" % billTableNo).rjust(17) + "\n")
-                Y += line_interval_height
 
-                #billDetailPrintContent.append("小炒" + ("台号:%d" % billTableNo).rjust(17) + "\n")
-                billDetailPrintContent.append("出品单".center(22,' ') + "\n")
-                billDetailPrintContent.append(time.strftime('%H:%M:%S',time.localtime(time.time())).rjust(21) + "\n");
-                billDetailPrintContent.append("_".center(TOTAL_WIDTH,"_") + "\n")
-                billDetailPrintContent.append("%d  %s   %.2f" % (dishAmount,dishName,dishPrice))
-                billDetailPrintContent.append("_".center(TOTAL_WIDTH,"_") + "\n")
+                # hDC.SelectObject(font)
+                # hDC.TextOut(X,Y,"小炒" + ("台号:%d" % billTableNo).rjust(23) + "\n")
+                # Y += line_interval_height
+                #
+                # #billDetailPrintContent.append("小炒" + ("台号:%d" % billTableNo).rjust(17) + "\n")
+                # billDetailPrintContent.append("出品单".center(22,' ') + "\n")
+                # billDetailPrintContent.append(time.strftime('%H:%M:%S',time.localtime(time.time())).rjust(21) + "\n");
+                # billDetailPrintContent.append("_".center(TOTAL_WIDTH,"_") + "\n")
+                # billDetailPrintContent.append("%d  %s   %.2f" % (dishAmount,dishName,dishPrice))
+                # billDetailPrintContent.append("_".center(TOTAL_WIDTH,"_") + "\n")
+
+                billDetailPrintContent.append(BillDetailPrint("小炒" + ("台号:%s" % billTableNo).rjust(23) + "\n",font,50))
+                billDetailPrintContent.append(BillDetailPrint("出品单".center(22,' ') + "\n",big_font,50))
+                billDetailPrintContent.append(BillDetailPrint(time.strftime('%m.%d %H:%M:%S',time.localtime(time.time())).rjust(21) + "\n",font,50))
+                billDetailPrintContent.append(BillDetailPrint("_".center(TOTAL_WIDTH,"_") + "\n",big_font,50))
+                billDetailPrintContent.append(BillDetailPrint("%d  %s   %.2f" % (dishAmount,dishName,dishPrice),big_font,50))
+                billDetailPrintContent.append(BillDetailPrint("_".center(TOTAL_WIDTH,"_") + "\n",big_font,50))
 
 
-                hDC.SelectObject(big_font)
+                #hDC.SelectObject(big_font)
 
                 # #open(filename,'w').writelines(billPrintContent)
-                for line in billDetailPrintContent:
-                    hDC.TextOut(X,Y,line)
-                    Y += line_interval_height
+                for billDetailPrint in billDetailPrintContent:
+                    hDC.SelectObject(billDetailPrint.getFont())
+                    hDC.TextOut(X,Y,billDetailPrint.getPrintContent())
+                    Y += billDetailPrint.getSpacing()
 
                 hDC.EndPage ()
                 hDC.EndDoc ()
@@ -145,7 +173,7 @@ if __name__=="__main__":
 
                 billPrintContent.append("%s%s%d%s%.2f \n" % (dishName,part1Blank,dishAmount,part2Blank,dishPrice))
 
-                dishPrintContent = DISH_TPL % (bill[2],0,billOperator,time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())),dishAmount,dishName,dishPrice,bill[2],bill[2])
+                dishPrintContent = DISH_TPL % (billTableNo,0,billOperator,time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())),dishAmount,dishName,dishPrice,billTableNo,billTableNo)
 
                 #open(dishfilename,'w').write(dishPrintContent)
                 #printfile(dishfilename)
